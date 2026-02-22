@@ -24,7 +24,7 @@ def evaluate_gate(intent: dict, signals: Signals) -> GateResult:
         + signals.cognitive
     ) * 20
 
-    confidence = 0.6
+    confidence = max(0.0, 1 - (score / 100))
 
     if intent.get("tier") in policy["hard_halt_tiers"]:
         outcome = "HALT"

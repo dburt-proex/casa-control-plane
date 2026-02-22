@@ -131,5 +131,28 @@
     },
     "previous_hash": "9a370e416f210b4df3de343bdbd78889a06d915d32032a4f20acc66a7a3446fd",
     "hash": "2e35de192ea11ae2e7463b548b73f19ee9036241077aff15738453b5d8526c93"
+  },
+  {
+    "index": 6,
+    "timestamp": "2026-02-22T12:47:40.438567+00:00",
+    "intent": {
+      "tier": 3
+    },
+    "signals": {
+      "financial": 0.1,
+      "legal": 0.1,
+      "brand": 0.1,
+      "operational": 0.1,
+      "cognitive": 0.1
+    },
+    "metadata": {
+      "outcome": "HALT",
+      "score": 10.0,
+      "confidence": 0.9,
+      "policy_version": "1.1",
+      "policy_hash": "9e643647ba02610a4640a3080fed9cac23fc87839a6f46797adae2f2bb621155"
+    },
+    "previous_hash": "2e35de192ea11ae2e7463b548b73f19ee9036241077aff15738453b5d8526c93",
+    "hash": "115de58591c8121be998e52b05ae4b65bacfc762a4c5391ddd26ec90369ce24e"
   }
 ]
