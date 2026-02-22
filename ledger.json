@@ -1,0 +1,135 @@
+[
+  {
+    "timestamp": "2026-02-22T05:15:34.498342",
+    "intent": {
+      "tier": 3
+    },
+    "signals": {
+      "financial": 0.1,
+      "legal": 0.1,
+      "brand": 0.1,
+      "operational": 0.1,
+      "cognitive": 0.1
+    },
+    "result": {
+      "outcome": "HALT",
+      "score": 10.0,
+      "confidence": 0.6,
+      "policy_version": "1.0",
+      "policy_hash": "f6e8c9fa4931c51db31b64f24e22659286196734078330ca8a710ee2db8f03db"
+    },
+    "previous_hash": "GENESIS",
+    "hash": "ed1403ea74b145b77e94f0e8096e69d8c4af474539925ef4a842e8393928d157"
+  },
+  {
+    "timestamp": "2026-02-22T07:04:01.759970",
+    "intent": {
+      "tier": 3
+    },
+    "signals": {
+      "financial": 0.1,
+      "legal": 0.1,
+      "brand": 0.1,
+      "operational": 0.1,
+      "cognitive": 0.1
+    },
+    "result": {
+      "outcome": "HALT",
+      "score": 10.0,
+      "confidence": 0.6,
+      "policy_version": "1.1",
+      "policy_hash": "9e643647ba02610a4640a3080fed9cac23fc87839a6f46797adae2f2bb621155"
+    },
+    "previous_hash": "ed1403ea74b145b77e94f0e8096e69d8c4af474539925ef4a842e8393928d157",
+    "hash": "29d5c0409862ebc2ce59beddd24a00b61af9e5de853060469c322af487c3cabc"
+  },
+  {
+    "timestamp": "2026-02-22T07:14:53.371706",
+    "intent": {
+      "tier": 3
+    },
+    "signals": {
+      "financial": 0.1,
+      "legal": 0.1,
+      "brand": 0.1,
+      "operational": 0.1,
+      "cognitive": 0.1
+    },
+    "result": {
+      "outcome": "HALT",
+      "score": 10.0,
+      "confidence": 0.6,
+      "policy_version": "1.1",
+      "policy_hash": "9e643647ba02610a4640a3080fed9cac23fc87839a6f46797adae2f2bb621155"
+    },
+    "previous_hash": "29d5c0409862ebc2ce59beddd24a00b61af9e5de853060469c322af487c3cabc",
+    "hash": "fce527b489f4c55761fe4637719c54bef94036b45a4c93898e4da94c776b64fa"
+  },
+  {
+    "timestamp": "2026-02-22T07:20:09.891954",
+    "intent": {
+      "tier": 3
+    },
+    "signals": {
+      "financial": 0.1,
+      "legal": 0.1,
+      "brand": 0.1,
+      "operational": 0.1,
+      "cognitive": 0.1
+    },
+    "result": {
+      "outcome": "HALT",
+      "score": 10.0,
+      "confidence": 0.6,
+      "policy_version": "1.1",
+      "policy_hash": "9e643647ba02610a4640a3080fed9cac23fc87839a6f46797adae2f2bb621155"
+    },
+    "previous_hash": "fce527b489f4c55761fe4637719c54bef94036b45a4c93898e4da94c776b64fa",
+    "hash": "eb623757d9fc6a232385f0fe60c8a6212a27cfd54edc2836cef74429fef2705c"
+  },
+  {
+    "timestamp": "2026-02-22T12:15:55.117753",
+    "intent": {
+      "tier": 3
+    },
+    "signals": {
+      "financial": 0.1,
+      "legal": 0.1,
+      "brand": 0.1,
+      "operational": 0.1,
+      "cognitive": 0.1
+    },
+    "result": {
+      "outcome": "HALT",
+      "score": 10.0,
+      "confidence": 0.6,
+      "policy_version": "1.1",
+      "policy_hash": "9e643647ba02610a4640a3080fed9cac23fc87839a6f46797adae2f2bb621155"
+    },
+    "previous_hash": "eb623757d9fc6a232385f0fe60c8a6212a27cfd54edc2836cef74429fef2705c",
+    "hash": "9a370e416f210b4df3de343bdbd78889a06d915d32032a4f20acc66a7a3446fd"
+  },
+  {
+    "index": 5,
+    "timestamp": "2026-02-22T12:35:43.886924+00:00",
+    "intent": {
+      "tier": 3
+    },
+    "signals": {
+      "financial": 0.1,
+      "legal": 0.1,
+      "brand": 0.1,
+      "operational": 0.1,
+      "cognitive": 0.1
+    },
+    "metadata": {
+      "outcome": "HALT",
+      "score": 10.0,
+      "confidence": 0.6,
+      "policy_version": "1.1",
+      "policy_hash": "9e643647ba02610a4640a3080fed9cac23fc87839a6f46797adae2f2bb621155"
+    },
+    "previous_hash": "9a370e416f210b4df3de343bdbd78889a06d915d32032a4f20acc66a7a3446fd",
+    "hash": "2e35de192ea11ae2e7463b548b73f19ee9036241077aff15738453b5d8526c93"
+  }
+]
