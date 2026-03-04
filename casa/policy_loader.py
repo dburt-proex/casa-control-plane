@@ -1,18 +1,26 @@
 import json
-import hashlib
-
-
-POLICY_FILE = "policy.json"
+from config import POLICY_FILE
 
 
 def load_policy():
     with open(POLICY_FILE, "r") as f:
-        policy = json.load(f)
-
-    return policy
+        return json.load(f)
 
 
-def policy_hash():
-    with open(POLICY_FILE, "rb") as f:
-        contents = f.read()
-    return hashlib.sha256(contents).hexdigest()
+def check_policy(agent, action, policy=None):
+
+    if policy is None:
+        policy = load_policy()
+
+    agent_permissions = policy.get("agents", {}).get(agent, [])
+
+    if action not in agent_permissions:
+        return "FORBIDDEN"
+
+    if action in policy.get("forbidden", []):
+        return "FORBIDDEN"
+
+    if action in policy.get("review", []):
+        return "REVIEW"
+
+    return "ALLOW"

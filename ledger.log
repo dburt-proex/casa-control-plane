@@ -1,0 +1,11 @@
+{"time": "2026-03-04T09:38:45.289900", "agent": "agent_01", "action": "read_database", "risk": "LOW", "decision": "ALLOW"}
+{"time": "2026-03-04T09:38:45.290835", "agent": "agent_01", "action": "read_database", "risk": "LOW", "decision": "ALLOW"}
+{"time": "2026-03-04T09:38:45.291782", "agent": "agent_01", "action": "write_database", "risk": "HIGH", "decision": "REVIEW"}
+{"time": "2026-03-04T09:38:45.292663", "agent": "agent_01", "action": "write_database", "risk": "HIGH", "decision": "REVIEW"}
+{"time": "2026-03-04T09:38:45.293499", "agent": "agent_01", "action": "delete_database", "risk": "CRITICAL", "decision": "HALT"}
+{"time": "2026-03-04T09:38:45.294357", "agent": "agent_01", "action": "delete_database", "risk": "CRITICAL", "decision": "HALT"}
+{"time": "2026-03-04T10:02:24.992536", "agent": "agent", "action": "action", "risk": "MEDIUM", "decision": "HALT"}
+{"time": "2026-03-04T10:02:27.332719", "agent": "agent", "action": "action", "risk": "MEDIUM", "decision": "HALT"}
+{"time": "2026-03-04T18:55:38.983356", "agent": "support_agent", "action": "write_database", "risk": "HIGH", "decision": "HALT"}
+{"time": "2026-03-04T18:56:20.815115", "agent": "agent_01", "action": "write_database", "risk": "HIGH", "decision": "REVIEW"}
+{"time": "2026-03-04T19:11:04.188960", "agent": "string", "action": "string", "risk": "MEDIUM", "decision": "HALT"}
