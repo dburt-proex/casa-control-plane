@@ -29,3 +29,13 @@
 {"time": "2026-03-04T21:38:33.573631", "agent": "admin_agent", "action": "send_email", "risk": "LOW", "decision": "HALT"}
 {"time": "2026-03-04T21:38:33.580656", "agent": "admin_agent", "action": "write_database", "risk": "HIGH", "decision": "REVIEW"}
 {"time": "2026-03-04T21:38:33.585043", "agent": "admin_agent", "action": "delete_database", "risk": "CRITICAL", "decision": "HALT"}
+{"time": "2026-03-04T21:42:40.628796", "agent": "analytics_agent", "action": "read_database", "risk": "LOW", "decision": "ALLOW"}
+{"time": "2026-03-04T21:42:40.637593", "agent": "agent_01", "action": "write_database", "risk": "HIGH", "decision": "REVIEW"}
+{"time": "2026-03-04T21:42:40.645351", "agent": "agent_01", "action": "delete_database", "risk": "CRITICAL", "decision": "HALT"}
+{"time": "2026-03-04T21:42:40.654501", "agent": "admin_agent", "action": "delete_database", "risk": "CRITICAL", "decision": "HALT"}
+{"time": "2026-03-04T21:42:40.661965", "agent": "unauthorized_agent", "action": "write_database", "risk": "HIGH", "decision": "HALT"}
+{"time": "2026-03-04T21:42:40.670607", "agent": "agent_01", "action": "read_database", "risk": "LOW", "decision": "ALLOW"}
+{"time": "2026-03-04T21:42:40.685743", "agent": "admin_agent", "action": "read_database", "risk": "LOW", "decision": "ALLOW"}
+{"time": "2026-03-04T21:42:40.692355", "agent": "admin_agent", "action": "send_email", "risk": "LOW", "decision": "HALT"}
+{"time": "2026-03-04T21:42:40.697696", "agent": "admin_agent", "action": "write_database", "risk": "HIGH", "decision": "REVIEW"}
+{"time": "2026-03-04T21:42:40.703909", "agent": "admin_agent", "action": "delete_database", "risk": "CRITICAL", "decision": "HALT"}
