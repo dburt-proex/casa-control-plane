@@ -7,8 +7,8 @@ from CASA.gate_engine import gate_decision
 from CASA.policy_loader import load_policy, check_policy
 from CASA.ledger import log_event
 
-from CASA.policy_simulator import load_ledger, simulate_policy
-from CASA.policy_diff import compute_policy_diff
+from CASA.policy_simulator import PolicySimulator
+from CASA.audit_ledger import read_ledger
 
 
 app = FastAPI(
@@ -78,26 +78,24 @@ def policy_dryrun(request: PolicyDryRunRequest):
         raise HTTPException(status_code=400, detail="Invalid JSON in policy file")
 
     try:
-        decisions = load_ledger()
+        ledger_entries = read_ledger()
     except FileNotFoundError:
         # No ledger yet, return empty results
         return {
-            "evaluations": 0,
-            "allow_to_review": 0,
-            "allow_to_halt": 0,
-            "review_to_allow": 0
+            "decisions_analyzed": 0,
+            "decisions_that_change": 0,
+            "routing_changes": 0,
+            "conflicts": [],
+            "risk_indicators": [],
+            "confidence": 0.0,
+            "recommendation": "NO_DATA"
         }
 
-    results = simulate_policy(decisions, candidate_policy)
+    # Use PolicySimulator to analyze impact of candidate policy
+    simulator = PolicySimulator(candidate_policy, ledger_entries)
+    results = simulator.simulate()
 
-    diff = compute_policy_diff(results)
-
-    return {
-        "evaluations": diff["total"],
-        "allow_to_review": diff["allow_to_review"],
-        "allow_to_halt": diff["allow_to_halt"],
-        "review_to_allow": diff["review_to_allow"]
-    }
+    return results
 
 
 # ------------------------------------------------
