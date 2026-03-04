@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import json
 
@@ -69,10 +69,24 @@ def evaluate_governance(request: GovernanceRequest):
 @app.post("/policy/dryrun")
 def policy_dryrun(request: PolicyDryRunRequest):
 
-    with open(request.policy_candidate_path) as f:
-        candidate_policy = json.load(f)
+    try:
+        with open(request.policy_candidate_path) as f:
+            candidate_policy = json.load(f)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Policy file not found")
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON in policy file")
 
-    decisions = load_ledger()
+    try:
+        decisions = load_ledger()
+    except FileNotFoundError:
+        # No ledger yet, return empty results
+        return {
+            "evaluations": 0,
+            "allow_to_review": 0,
+            "allow_to_halt": 0,
+            "review_to_allow": 0
+        }
 
     results = simulate_policy(decisions, candidate_policy)
 
