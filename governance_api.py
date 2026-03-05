@@ -10,6 +10,8 @@ from CASA.ledger import log_event
 from CASA.policy_simulator import PolicySimulator
 from CASA.audit_ledger import read_ledger
 from CASA.decision_replay import DecisionReplayEngine
+from CASA.telemetry.governance_dashboard import GovernanceDashboard
+from CASA.telemetry.boundary_stress_meter import BoundaryStressMeter
 
 
 app = FastAPI(
@@ -158,6 +160,69 @@ def replay_all_decisions():
         engine = DecisionReplayEngine()
         results = engine.replay_all_decisions()
         return results
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Ledger not found")
+
+
+# ------------------------------------------------
+# Boundary Stress & Dashboard Endpoints
+# ------------------------------------------------
+
+@app.get("/boundary-stress")
+def get_boundary_stress():
+    """Get boundary stress metrics measuring system stress on policy limits.
+    
+    Returns stress score (0-1) and system state (STABLE/CAUTION/CRITICAL) indicating:
+    - Near-threshold decisions (decisions operating near review boundary)
+    - Tier2 boundary hits (escalations due to policy rules)
+    - Drift acceleration (sudden changes in behavior pattern)
+    - Confidence degradation (decisions below minimum confidence threshold)
+    """
+    try:
+        meter = BoundaryStressMeter()
+        return meter.compute_stress()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Ledger not found")
+
+
+@app.get("/dashboard")
+def get_dashboard_json():
+    """Get comprehensive governance dashboard in JSON format.
+    
+    Includes all observability panels:
+    - Governance Health (decision distribution, metrics)
+    - Boundary Stress (stress score, system state, warnings)
+    - Drift Monitoring (drift index, stability, anomalies)
+    - Risk Profile (risk classification distribution)
+    - System State (overall health, ledger integrity, policy version)
+    """
+    try:
+        dashboard = GovernanceDashboard()
+        return dashboard.get_json_dashboard()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Ledger not found")
+
+
+@app.get("/dashboard/text")
+def get_dashboard_text():
+    """Get governance dashboard as formatted ASCII text (for CLI/logs).
+    
+    Shows all monitoring panels in human-readable text format:
+    - Governance Health
+    - Boundary Stress
+    - Drift Monitoring
+    - Risk Classification
+    - System State
+    - Warnings & Alerts
+    """
+    try:
+        dashboard = GovernanceDashboard()
+        return {
+            "dashboard": dashboard.render_text_dashboard(),
+            "system_safe": dashboard.is_system_safe(),
+            "requires_attention": dashboard.requires_attention(),
+            "recommendation": dashboard.get_recommendation(),
+        }
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Ledger not found")
 

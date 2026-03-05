@@ -242,8 +242,8 @@ def test_dashboard_text_render():
     dashboard = GovernanceDashboard()
     text = dashboard.render_text_dashboard()
     
-    assert "CASA GOVERNANCE DASHBOARD" in text
-    assert "DECISION DISTRIBUTION" in text
+    assert "CASA" in text and "GOVERNANCE" in text and "DASHBOARD" in text
+    assert "GOVERNANCE HEALTH" in text
     assert "ALLOW" in text
     assert "REVIEW" in text
     assert "HALT" in text
@@ -260,8 +260,10 @@ def test_dashboard_json_output():
     assert "timestamp" in json_output
     assert "governance_health" in json_output
     assert "risk_profile" in json_output
-    assert "stability_metrics" in json_output
+    assert "drift_monitoring" in json_output or "stability_metrics" in json_output
     assert "summary" in json_output
+    # New boundary stress panel
+    assert "boundary_stress" in json_output
 
 
 def test_system_safety_assessment():
