@@ -1,8 +1,12 @@
 import streamlit as st
 import requests
 import pandas as pd
+import os
 
-API_URL = "http://127.0.0.1:5000"
+# Configuration for local vs cloud deployment
+# Local: http://127.0.0.1:5000
+# Cloud: Set API_URL environment variable to your deployed API endpoint
+API_URL = os.getenv("CASA_API_URL", "http://127.0.0.1:5000")
 
 st.set_page_config(
     page_title="CASA Governance Dashboard",
@@ -11,9 +15,25 @@ st.set_page_config(
 
 st.title("CASA AI Governance Control Plane")
 
-# -----------------------------
+# Sidebar Configuration
+with st.sidebar:
+    st.header("⚙️ Configuration")
+    
+    # Allow override of API URL for cloud deployment
+    with st.expander("API Settings", expanded=False):
+        api_url_input = st.text_input(
+            "API Endpoint URL",
+            value=API_URL,
+            help="For local development: http://127.0.0.1:5000\nFor cloud deployment: your deployed API URL"
+        )
+        if api_url_input and api_url_input != API_URL:
+            API_URL = api_url_input
+    
+    st.divider()
+    st.caption("CASA v1.0 - Enterprise Governance Dashboard")
+    st.caption(f"📍 API: {API_URL}")
+
 # Fetch API Data
-# -----------------------------
 
 def fetch_dashboard():
     try:
@@ -46,8 +66,29 @@ dashboard = fetch_dashboard()
 stress = fetch_stress()
 
 if dashboard is None or stress is None:
-    st.warning("⚠️ Unable to connect to CASA API. Make sure the API server is running on http://127.0.0.1:5000")
-    st.info("Start the API with: `python -m uvicorn governance_api:app --host 127.0.0.1 --port 5000`")
+    st.error("❌ Unable to connect to CASA API")
+    
+    if API_URL == "http://127.0.0.1:5000":
+        st.warning("**Local Deployment:** API server not running")
+        st.info("""
+        Start the API server locally:
+        ```bash
+        python -m uvicorn governance_api:app --host 127.0.0.1 --port 5000
+        ```
+        Then refresh this page.
+        """)
+    else:
+        st.warning("**Cloud Deployment:** Unable to reach API endpoint")
+        st.info(f"""
+        Current API URL: `{API_URL}`
+        
+        **Options:**
+        1. Deploy CASA API to your cloud provider (Heroku, AWS, Azure, etc.)
+        2. Use the sidebar to configure a custom API endpoint
+        3. Run locally with: `python -m uvicorn governance_api:app --host 127.0.0.1 --port 5000`
+        
+        Then set environment variable: `CASA_API_URL=your-api-url`
+        """)
     st.stop()
 
 # -----------------------------
