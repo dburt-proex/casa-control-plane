@@ -1,0 +1,32 @@
+services:
+  # CASA Governance API
+  - type: web
+    name: casa-governance-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn governance_api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    healthCheckPath: /health
+
+  # CASA Streamlit Dashboard
+  - type: web
+    name: casa-dashboard
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run streamlit_app.py --server.port $PORT --server.address 0.0.0.0 --server.enableCORS false
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: CASA_API_URL
+        fromService:
+          name: casa-governance-api
+          type: web
+          property: host
+      - key: STRIPE_PAYMENT_LINK
+        sync: false
+      - key: LOGIN_USERNAME
+        sync: false
+      - key: LOGIN_PASSWORD_HASH
+        sync: false
