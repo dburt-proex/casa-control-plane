@@ -4,7 +4,99 @@ Deterministic Governance Control Plane for Autonomous Systems
 
 ---
 
-## Overview
+## 🚀 Demo Site
+
+> **Live demo:** Deploy with the one-click buttons below, then open the Streamlit dashboard.
+>
+> Default login — **username:** `admin` **password:** `casa-demo`
+>
+> [![Deploy API to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+> &nbsp;&nbsp;
+> [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://streamlit.io/cloud)
+
+---
+
+## Quick Start (local)
+
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Generate demo data
+python demo_setup.py stable
+
+# 3. Start the CASA API
+uvicorn governance_api:app --host 127.0.0.1 --port 5000
+
+# 4. In a second terminal, start the Streamlit dashboard
+streamlit run streamlit_app.py
+#    → open http://localhost:8501
+#    → login: admin / casa-demo
+```
+
+---
+
+## Cloud Deployment
+
+### Option A — Render (recommended)
+
+1. Fork this repo
+2. In [Render](https://render.com), create a new **Blueprint** and point it at your fork
+3. Render will read `render.yaml` and create both services automatically
+4. Set the environment variables below in the Render dashboard
+
+### Option B — Heroku
+
+```bash
+heroku create your-casa-api
+git push heroku main
+heroku config:set CORS_ORIGINS=https://your-dashboard.streamlit.app
+```
+
+### Option C — Streamlit Community Cloud (dashboard only)
+
+1. Push this repo to GitHub
+2. Go to [share.streamlit.io](https://share.streamlit.io) → **New app** → select `streamlit_app.py`
+3. Add secrets under **Advanced settings**:
+   ```
+   CASA_API_URL = "https://your-api.onrender.com"
+   LOGIN_USERNAME = "admin"
+   LOGIN_PASSWORD_HASH = "<sha256 hex of your password>"
+   STRIPE_PAYMENT_LINK = "https://buy.stripe.com/..."
+   ```
+
+---
+
+## Environment Variables
+
+| Variable | Service | Description | Default |
+|---|---|---|---|
+| `CASA_API_URL` | Dashboard | URL of the deployed CASA API | `http://127.0.0.1:5000` |
+| `CORS_ORIGINS` | API | Comma-separated allowed origins | `*` |
+| `LOGIN_USERNAME` | Dashboard | Dashboard login username | `admin` |
+| `LOGIN_PASSWORD_HASH` | Dashboard | SHA-256 hex digest of the password | hash of `casa-demo` |
+| `STRIPE_PUBLISHABLE_KEY` | Dashboard | Stripe publishable key | _(none)_ |
+| `STRIPE_PAYMENT_LINK` | Dashboard | Stripe payment link URL for Pro plan | _(none)_ |
+
+Generate a password hash:
+```bash
+python -c "import hashlib; print(hashlib.sha256(b'yourpassword').hexdigest())"
+```
+
+---
+
+## Stripe Integration
+
+The dashboard includes a **Plans & Pricing** section powered by Stripe.
+
+1. In your [Stripe dashboard](https://dashboard.stripe.com), create a **Payment Link** for the Pro plan
+2. Copy the payment link URL
+3. Set `STRIPE_PAYMENT_LINK=https://buy.stripe.com/...` in your deployment environment
+4. Optionally set `STRIPE_PUBLISHABLE_KEY` to display a Stripe-powered badge
+
+---
+
+
 
 CASA is a deterministic control plane that governs autonomous and semi-autonomous AI systems.
 

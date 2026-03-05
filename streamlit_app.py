@@ -2,23 +2,84 @@ import streamlit as st
 import requests
 import pandas as pd
 import os
-
-# Configuration for local vs cloud deployment
-# Local: http://127.0.0.1:5000
-# Cloud: Set API_URL environment variable to your deployed API endpoint
-API_URL = os.getenv("CASA_API_URL", "http://127.0.0.1:5000")
+import hashlib
+import hmac
 
 st.set_page_config(
     page_title="CASA Governance Dashboard",
     layout="wide"
 )
 
+# Configuration for local vs cloud deployment
+# Local: http://127.0.0.1:5000
+# Cloud: Set API_URL environment variable to your deployed API endpoint
+API_URL = os.getenv("CASA_API_URL", "http://127.0.0.1:5000")
+
+# Stripe configuration (set STRIPE_PAYMENT_LINK env var for live integration)
+STRIPE_PAYMENT_LINK = os.getenv("STRIPE_PAYMENT_LINK", "")
+
+# ------------------------------------------------
+# Login
+# ------------------------------------------------
+
+def _check_password(username: str, password: str) -> bool:
+    """Verify username and password against environment-configured credentials.
+
+    Credentials are supplied via environment variables:
+      LOGIN_USERNAME      – allowed username (default: admin)
+      LOGIN_PASSWORD_HASH – SHA-256 hex digest of the password (default: hash of "casa-demo")
+    """
+    expected_user = os.getenv("LOGIN_USERNAME", "admin")
+    default_hash = hashlib.sha256(b"casa-demo").hexdigest()
+    expected_hash = os.getenv("LOGIN_PASSWORD_HASH", default_hash)
+
+    user_ok = username.strip() == expected_user
+    pass_hash = hashlib.sha256(password.encode()).hexdigest()
+    pass_ok = hmac.compare_digest(pass_hash, expected_hash)
+    return user_ok and pass_ok
+
+
+def show_login_form() -> bool:
+    """Render login form and return True when the user is authenticated."""
+    st.title("🔐 CASA Governance Dashboard")
+    st.subheader("Please log in to continue")
+
+    with st.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submitted = st.form_submit_button("Log in")
+
+    if submitted:
+        if _check_password(username, password):
+            st.session_state["authenticated"] = True
+            st.session_state["username"] = username
+            st.rerun()
+        else:
+            st.error("Incorrect username or password.")
+
+    return st.session_state.get("authenticated", False)
+
+
+# Guard: require authentication before rendering the dashboard
+if not st.session_state.get("authenticated", False):
+    show_login_form()
+    st.stop()
+
 st.title("CASA AI Governance Control Plane")
 
 # Sidebar Configuration
 with st.sidebar:
     st.header("⚙️ Configuration")
-    
+
+    # Logged-in user info and logout
+    st.write(f"👤 **{st.session_state.get('username', 'User')}**")
+    if st.button("Log out"):
+        st.session_state["authenticated"] = False
+        st.session_state.pop("username", None)
+        st.rerun()
+
+    st.divider()
+
     # Allow override of API URL for cloud deployment
     with st.expander("API Settings", expanded=False):
         api_url_input = st.text_input(
@@ -28,10 +89,19 @@ with st.sidebar:
         )
         if api_url_input and api_url_input != API_URL:
             API_URL = api_url_input
-    
+
     st.divider()
+
+    # Stripe upgrade prompt (only shown when a payment link is configured)
+    if STRIPE_PAYMENT_LINK:
+        st.subheader("💳 Upgrade to Pro")
+        st.write("Unlock unlimited decision history, advanced analytics, and dedicated support.")
+        st.link_button("Upgrade now →", STRIPE_PAYMENT_LINK, use_container_width=True)
+        st.divider()
+
     st.caption("CASA v1.0 - Enterprise Governance Dashboard")
     st.caption(f"📍 API: {API_URL}")
+
 
 # Fetch API Data
 
@@ -339,6 +409,50 @@ st.header("Raw Text Dashboard")
 text_dashboard = fetch_text_dashboard()
 if text_dashboard:
     st.code(text_dashboard, language="text")
+
+# -----------------------------
+# Pricing / Stripe
+# -----------------------------
+
+st.header("💳 Plans & Pricing")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.subheader("🆓 Free")
+    st.write("**$0 / month**")
+    st.write("- Up to 1,000 governance decisions/month")
+    st.write("- Basic dashboard")
+    st.write("- Community support")
+    st.write("- 7-day ledger retention")
+    st.write("---")
+    st.caption("Current plan")
+
+with col2:
+    st.subheader("🚀 Pro")
+    st.write("**$99 / month**")
+    st.write("- Unlimited governance decisions")
+    st.write("- Full analytics dashboard")
+    st.write("- Priority email support")
+    st.write("- 1-year ledger retention")
+    st.write("- Policy dry-run simulator")
+    if STRIPE_PAYMENT_LINK:
+        st.link_button("Upgrade to Pro →", STRIPE_PAYMENT_LINK, use_container_width=True, type="primary")
+    else:
+        st.info("Contact us to upgrade")
+
+with col3:
+    st.subheader("🏢 Enterprise")
+    st.write("**Custom pricing**")
+    st.write("- Everything in Pro")
+    st.write("- Dedicated SLA")
+    st.write("- On-premise deployment")
+    st.write("- Regulatory compliance pack")
+    st.write("- Custom integrations")
+    st.link_button("Contact Sales →", "mailto:sales@casa-governance.ai", use_container_width=True)
+
+st.markdown("---")
+st.caption("🔒 Payments securely processed by [Stripe](https://stripe.com)")
 
 # -----------------------------
 # Footer

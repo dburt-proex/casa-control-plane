@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import json
 import os
@@ -21,6 +22,16 @@ app = FastAPI(
     title="CASA Governance API",
     description="Deterministic Governance Control Plane for Agentic Systems",
     version="1.0"
+)
+
+# Allow cross-origin requests from the Streamlit dashboard and any deployed frontend
+_cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
