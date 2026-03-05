@@ -1,6 +1,9 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import json
+import os
 
 from CASA.risk_engine import classify_risk
 from CASA.gate_engine import gate_decision
@@ -225,6 +228,32 @@ def get_dashboard_text():
         }
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Ledger not found")
+
+
+# ------------------------------------------------
+# HTML Dashboard
+# ------------------------------------------------
+
+@app.get("/")
+def serve_dashboard():
+    """Serve the HTML governance dashboard.
+    
+    Access at: http://localhost:5000/
+    """
+    dashboard_path = os.path.join(os.path.dirname(__file__), "dashboard.html")
+    if os.path.exists(dashboard_path):
+        return FileResponse(dashboard_path, media_type="text/html")
+    else:
+        return {
+            "message": "CASA Governance API",
+            "endpoints": {
+                "api_docs": "/docs",
+                "dashboard": "/dashboard (JSON)",
+                "dashboard_text": "/dashboard/text",
+                "boundary_stress": "/boundary-stress",
+                "health": "/health"
+            }
+        }
 
 
 # ------------------------------------------------
