@@ -20,7 +20,7 @@ class GovernanceMetrics:
         self._compute_metrics()
     
     def _compute_metrics(self):
-        """Compute all metrics from ledger."""
+        """Compute all metrics from ledger in a single pass."""
         if not self.entries:
             self._init_empty_metrics()
             return
@@ -41,6 +41,24 @@ class GovernanceMetrics:
         # Action distribution
         actions = [e.get("action") for e in self.entries]
         self.action_counts = Counter(actions)
+
+        # Derived counters computed here to avoid extra O(n) passes later.
+        self._critical_halt_count = 0
+        self._review_action_counts: defaultdict = defaultdict(int)
+        self._halt_agent_counts: defaultdict = defaultdict(int)
+
+        for entry in self.entries:
+            decision = entry.get("decision")
+            risk = entry.get("risk")
+            agent = entry.get("agent")
+            action = entry.get("action")
+
+            if decision == "HALT" and risk == "CRITICAL":
+                self._critical_halt_count += 1
+            if decision == "REVIEW":
+                self._review_action_counts[action] += 1
+            if decision == "HALT":
+                self._halt_agent_counts[agent] += 1
     
     def _init_empty_metrics(self):
         """Initialize empty metrics."""
@@ -49,6 +67,9 @@ class GovernanceMetrics:
         self.agent_counts = Counter()
         self.action_counts = Counter()
         self.total_decisions = 0
+        self._critical_halt_count = 0
+        self._review_action_counts: defaultdict = defaultdict(int)
+        self._halt_agent_counts: defaultdict = defaultdict(int)
     
     def gate_distribution(self) -> Dict[str, float]:
         """Get percentage distribution of ALLOW/REVIEW/HALT.
@@ -116,11 +137,7 @@ class GovernanceMetrics:
     
     def critical_halted(self) -> int:
         """Count of critical risk decisions that were halted."""
-        count = 0
-        for entry in self.entries:
-            if entry.get("risk") == "CRITICAL" and entry.get("decision") == "HALT":
-                count += 1
-        return count
+        return self._critical_halt_count
     
     def policy_violations(self) -> int:
         """Count of halted decisions (proxy for policy violations)."""
@@ -132,12 +149,7 @@ class GovernanceMetrics:
         Returns:
             [("write_database", 45), ("delete_database", 23), ...]
         """
-        review_actions = defaultdict(int)
-        for entry in self.entries:
-            if entry.get("decision") == "REVIEW":
-                review_actions[entry.get("action")] += 1
-        
-        return review_actions.items() if review_actions else []
+        return self._review_action_counts.items() if self._review_action_counts else []
     
     def most_violated_agents(self, top_n: int = 5) -> List[tuple]:
         """Get agents with most halted decisions.
@@ -145,12 +157,7 @@ class GovernanceMetrics:
         Returns:
             [("agent_01", 12), ("malicious_agent", 8), ...]
         """
-        halted_agents = defaultdict(int)
-        for entry in self.entries:
-            if entry.get("decision") == "HALT":
-                halted_agents[entry.get("agent")] += 1
-        
-        return halted_agents.items() if halted_agents else []
+        return self._halt_agent_counts.items() if self._halt_agent_counts else []
     
     def agent_score(self, agent: str) -> float:
         """Compute trust score for an agent (0-100).

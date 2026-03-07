@@ -1,6 +1,7 @@
 import datetime
 import json
 import hashlib
+import os
 from typing import List, Dict, Any
 
 
@@ -17,14 +18,44 @@ def compute_hash(entry: Dict[str, Any], previous_hash: str = "0") -> str:
     return hashlib.sha256(entry_str.encode()).hexdigest()
 
 
+def _get_previous_hash() -> str:
+    """Return the hash of the last ledger entry without reading the whole file.
+
+    Reads a small tail chunk of the file so performance stays constant
+    regardless of how many entries the ledger already contains.
+    """
+    try:
+        file_size = os.path.getsize(LEDGER_FILE)
+    except FileNotFoundError:
+        return "0"
+
+    if file_size == 0:
+        return "0"
+
+    try:
+        # A typical ledger line is well under 1 KB; 4 KB is a safe tail size.
+        chunk_size = min(4096, file_size)
+        with open(LEDGER_FILE, "rb") as f:
+            f.seek(-chunk_size, 2)
+            chunk = f.read(chunk_size).decode("utf-8", errors="replace")
+
+        lines = [line for line in chunk.splitlines() if line.strip()]
+        if not lines:
+            return "0"
+
+        last_entry = json.loads(lines[-1])
+        return last_entry.get("hash", "0")
+    except (json.JSONDecodeError, KeyError, OSError):
+        return "0"
+
+
 def record_decision(agent: str, action: str, risk: str, decision: str) -> Dict[str, Any]:
     """Record a governance decision with hash chain integrity.
     
     Returns the recorded entry with computed hash.
     """
-    # Read current ledger to get previous hash
-    entries = read_ledger()
-    previous_hash = entries[-1]["hash"] if entries else "0"
+    # Retrieve the previous hash without loading the entire ledger from disk.
+    previous_hash = _get_previous_hash()
     
     entry = {
         "timestamp": datetime.datetime.utcnow().isoformat(),
