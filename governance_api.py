@@ -7,7 +7,7 @@ from CASA.gate_engine import gate_decision
 from CASA.policy_loader import load_policy, check_policy
 from CASA.ledger import log_event
 
-from CASA.policy_simulator import PolicySimulator
+from CASA.policy_simulator import simulate_policy
 from CASA.audit_ledger import read_ledger
 from CASA.decision_replay import DecisionReplayEngine
 from CASA.telemetry.governance_dashboard import GovernanceDashboard
@@ -45,8 +45,8 @@ def evaluate_governance(request: GovernanceRequest):
     # load current policy and evaluate request
     policy = load_policy()
 
-    # classify risk based on action and signals
-    risk = classify_risk(request.action, signals_context=request.signals)
+    # classify risk based on action
+    risk = classify_risk(request.action)
 
     # determine policy result for this agent/action
     policy_result = check_policy(request.agent, request.action, policy=policy)
@@ -54,14 +54,12 @@ def evaluate_governance(request: GovernanceRequest):
     # compute governance decision
     decision = gate_decision(policy_result, risk)
 
-    # log to ledger for audit/training - capture signals for replay
+    # log to ledger for audit/training
     log_event(
         request.agent,
         request.action,
         risk,
-        decision,
-        signals=request.signals,
-        policy_version=policy.get("version", "unknown")
+        decision
     )
 
     return {
@@ -93,19 +91,24 @@ def policy_dryrun(request: PolicyDryRunRequest):
         # No ledger yet, return empty results
         return {
             "decisions_analyzed": 0,
-            "decisions_that_change": 0,
-            "routing_changes": 0,
-            "conflicts": [],
-            "risk_indicators": [],
-            "confidence": 0.0,
-            "recommendation": "NO_DATA"
+            "decisions_changed": 0,
+            "routing_changes": [],
+            "status": "NO_DATA"
         }
 
-    # Use PolicySimulator to analyze impact of candidate policy
-    simulator = PolicySimulator(candidate_policy, ledger_entries)
-    results = simulator.simulate()
-
-    return results
+    # Simulate policy against historical decisions
+    results = simulate_policy(ledger_entries, candidate_policy)
+    
+    # Calculate aggregate metrics
+    decisions_changed = sum(1 for r in results if r["original"] != r["simulated"])
+    
+    return {
+        "decisions_analyzed": len(results),
+        "decisions_changed": decisions_changed,
+        "change_percentage": round(100 * decisions_changed / len(results), 2) if results else 0.0,
+        "routing_changes": results,
+        "status": "SUCCESS" if results else "NO_DECISIONS"
+    }
 
 
 # ------------------------------------------------
