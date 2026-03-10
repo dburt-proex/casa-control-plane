@@ -29,13 +29,7 @@ def sample_ledger_stable():
     for i in range(50):
         risk = "LOW" if i % 3 == 0 else "MEDIUM"
         decision = "ALLOW" if i % 2 == 0 else "REVIEW"
-        log_event(
-            agent=f"agent_{i % 5}",
-            action="read_operation",
-            risk=risk,
-            decision=decision,
-            policy_version="v1.0"
-        )
+        log_event(f"agent_{i % 5}", "read_operation", risk, decision)
 
 
 @pytest.fixture
@@ -51,13 +45,7 @@ def sample_ledger_stressed():
             risk = "CRITICAL"  # Above halt threshold
             decision = "HALT"
         
-        log_event(
-            agent=f"agent_{i % 3}",
-            action="dangerous_op",
-            risk=risk,
-            decision=decision,
-            policy_version="v1.0"
-        )
+        log_event(f"agent_{i % 3}", "dangerous_op", risk, decision)
 
 
 def test_stress_meter_initialization():
@@ -127,12 +115,7 @@ def test_near_threshold_detection():
     """Test detection of decisions near policy boundary."""
     # Create decisions right at/near 70 review threshold
     for risk in [55, 60, 65, 70, 75, 80]:  # Mix of values near and away from threshold
-        log_event(
-            agent="test_agent",
-            action="test_action",
-            risk=risk,
-            decision="REVIEW" if risk >= 70 else "ALLOW"
-        )
+        log_event("test_agent", "test_action", risk, "REVIEW" if risk >= 70 else "ALLOW")
     
     meter = BoundaryStressMeter()
     stress = meter.compute_stress()
@@ -156,12 +139,7 @@ def test_stress_score_weights():
     """Test that stress score respects weight breakdown."""
     # Create a ledger with mixed stress indicators
     for i in range(30):
-        log_event(
-            agent=f"agent_{i}",
-            action="action",
-            risk="HIGH" if i % 2 == 0 else "MEDIUM",
-            decision="REVIEW" if i % 2 == 0 else "ALLOW"
-        )
+        log_event(f"agent_{i}", "action", "HIGH" if i % 2 == 0 else "MEDIUM", "REVIEW" if i % 2 == 0 else "ALLOW")
     
     meter = BoundaryStressMeter()
     stress = meter.compute_stress()
@@ -192,12 +170,7 @@ def test_warning_generation_near_threshold():
     """Test that warnings are generated for high near-threshold rate."""
     # Create many decisions near boundary
     for i in range(40):
-        log_event(
-            agent="agent",
-            action="action",
-            risk="HIGH",  # 75, very near review threshold of 70
-            decision="REVIEW"
-        )
+        log_event("agent", "action", "HIGH", "REVIEW")  # 75, very near review threshold of 70
     
     meter = BoundaryStressMeter()
     stress = meter.compute_stress()
@@ -211,12 +184,7 @@ def test_warning_generation_tier2_hits():
     """Test warnings for elevated tier2 boundary hits."""
     # Create many REVIEW decisions from policy escalation (not high risk)
     for i in range(60):
-        log_event(
-            agent=f"agent_{i % 3}",
-            action="operation",
-            risk="MEDIUM",  # Not naturally HIGH
-            decision="REVIEW"  # But escalated by policy
-        )
+        log_event(f"agent_{i % 3}", "operation", "MEDIUM", "REVIEW")  # Not naturally HIGH, but escalated by policy
     
     meter = BoundaryStressMeter()
     stress = meter.compute_stress()
@@ -231,12 +199,7 @@ def test_warning_generation_drift():
     # Create pattern showing drift increase
     for i in range(30):
         risk_pattern = "MEDIUM" if i < 15 else "HIGH"  # Shift toward higher risk
-        log_event(
-            agent=f"agent_{i % 4}",
-            action="shifting_op",
-            risk=risk_pattern,
-            decision="ALLOW" if i < 15 else "REVIEW"
-        )
+        log_event(f"agent_{i % 4}", "shifting_op", risk_pattern, "ALLOW" if i < 15 else "REVIEW")
     
     meter = BoundaryStressMeter()
     stress = meter.compute_stress()
@@ -250,12 +213,7 @@ def test_confidence_degradation_metric():
     # Create decisions that would have low confidence (REVIEW)
     for i in range(40):
         decision = "REVIEW" if i % 3 == 0 else "ALLOW"
-        log_event(
-            agent="agent",
-            action="action",
-            risk="MEDIUM",
-            decision=decision
-        )
+        log_event("agent", "action", "MEDIUM", decision)
     
     meter = BoundaryStressMeter()
     stress = meter.compute_stress()
@@ -280,12 +238,7 @@ def test_stress_meter_with_mixed_risk_levels():
             risk = "LOW"
             decision = "ALLOW"
         
-        log_event(
-            agent=f"agent_{i % 5}",
-            action=action,
-            risk=risk,
-            decision=decision
-        )
+        log_event(f"agent_{i % 5}", action, risk, decision)
     
     meter = BoundaryStressMeter()
     stress = meter.compute_stress()

@@ -27,50 +27,11 @@ def clean_ledger():
 def sample_ledger():
     """Create sample ledger entries for testing."""
     # Log several decisions with signals
-    log_event(
-        agent="agent_1",
-        action="file_read",
-        risk=35,
-        decision="ALLOW",
-        signals={"sensitive": False, "external": False},
-        policy_version="v1.0"
-    )
-    
-    log_event(
-        agent="agent_2",
-        action="database_write",
-        risk=72,
-        decision="REVIEW",
-        signals={"sensitive": True, "external": False},
-        policy_version="v1.0"
-    )
-    
-    log_event(
-        agent="agent_3",
-        action="api_call",
-        risk=85,
-        decision="HALT",
-        signals={"sensitive": True, "external": True},
-        policy_version="v1.0"
-    )
-    
-    log_event(
-        agent="agent_1",
-        action="config_change",
-        risk=45,
-        decision="REVIEW",
-        signals={"sensitive": False, "system_critical": True},
-        policy_version="v1.0"
-    )
-    
-    log_event(
-        agent="agent_2",
-        action="file_read",
-        risk=25,
-        decision="ALLOW",
-        signals={"sensitive": False, "external": False},
-        policy_version="v1.0"
-    )
+    log_event("agent_1", "file_read", "LOW", "ALLOW")  # or 35?
+    log_event("agent_2", "database_write", "HIGH", "REVIEW")  # or 72?
+    log_event("agent_3", "api_call", "CRITICAL", "HALT")  # or 85?
+    log_event("agent_1", "config_change", "MEDIUM", "REVIEW")  # or 45?
+    log_event("agent_2", "file_read", "LOW", "ALLOW")  # or 25?
 
 
 def test_replay_single_decision_not_found():
@@ -223,12 +184,7 @@ def test_replay_all_decisions(sample_ledger):
 def test_replay_decision_no_signals_in_ledger():
     """Test replaying when signals are not in ledger (backward compatibility)."""
     # Log decision without signals
-    log_event(
-        agent="test_agent",
-        action="test_action",
-        risk=50,
-        decision="REVIEW"
-    )
+    log_event("test_agent", "test_action", 50, "REVIEW")
     
     engine = DecisionReplayEngine()
     ledger = engine.ledger
@@ -255,13 +211,7 @@ def test_replay_recommendation_stable():
     """Test recommendation when changes are minimal."""
     # Create ledger with minimal changes
     for i in range(10):
-        log_event(
-            agent=f"agent_{i}",
-            action="stable_action",
-            risk=30 + i,  # Stable, low risk
-            decision="ALLOW",
-            policy_version="v1.0"
-        )
+        log_event(f"agent_{i}", "stable_action", 30 + i, "ALLOW")
     
     engine = DecisionReplayEngine()
     results = engine.replay_batch(limit=10)
@@ -273,14 +223,7 @@ def test_replay_recommendation_stable():
 
 def test_replay_decision_reason_generation():
     """Test that decision change reasons are reasonable."""
-    log_event(
-        agent="test_agent",
-        action="test_action",
-        risk=75,
-        decision="REVIEW",
-        signals={"test": True},
-        policy_version="v1.0"
-    )
+    log_event("test_agent", "test_action", "HIGH", "REVIEW")
     
     engine = DecisionReplayEngine()
     ledger = engine.ledger
@@ -366,17 +309,15 @@ def test_replay_signal_confidence_scoring():
         agent="agent_full",
         action="action",
         risk=50,
-        decision="REVIEW",
-        signals={"sig1": 1, "sig2": 2, "sig3": 3, "sig4": 4, "sig5": 5, "sig6": 6}
+        decision="REVIEW"
     )
     
     # Decision with no signals
     log_event(
-        agent="agent_empty",
-        action="action",
-        risk=50,
-        decision="REVIEW",
-        signals={}
+        "agent_empty",
+        "action",
+        50,
+        "REVIEW"
     )
     
     engine = DecisionReplayEngine()
@@ -393,14 +334,7 @@ def test_replay_signal_confidence_scoring():
 
 def test_replay_consistency():
     """Test that replaying the same decision twice produces same results."""
-    log_event(
-        agent="agent",
-        action="action",
-        risk=60,
-        decision="REVIEW",
-        signals={"key": "value"},
-        policy_version="v1.0"
-    )
+    log_event("agent", "action", "MEDIUM", "REVIEW")
     
     engine = DecisionReplayEngine()
     ledger = engine.ledger
