@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import json
 
+from config import ENVIRONMENT, LOG_LEVEL, POLICY_FILE, LEDGER_PATH
+
 from CASA.risk_engine import classify_risk
 from CASA.gate_engine import gate_decision
 from CASA.policy_loader import load_policy, check_policy
@@ -238,5 +240,9 @@ def get_dashboard_text():
 def health_check():
 
     return {
-        "status": "CASA Governance API running"
+        "status": "CASA Governance API running",
+        "environment": ENVIRONMENT,
+        "log_level": LOG_LEVEL,
+        "policy_file": POLICY_FILE,
+        "ledger_path": LEDGER_PATH
     }

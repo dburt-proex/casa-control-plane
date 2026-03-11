@@ -93,7 +93,7 @@ class DecisionReplayEngine:
         
         # Recompute risk under current conditions
         # Classifier behavior might differ if thresholds changed
-        new_risk = classify_risk(action, signals_context=signals)
+        new_risk = classify_risk(action)
         new_risk_numeric = risk_to_numeric(new_risk)
         
         # Determine policy to use (current or override)
