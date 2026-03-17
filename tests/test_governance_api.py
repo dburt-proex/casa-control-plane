@@ -1,9 +1,20 @@
 import pytest
 from fastapi.testclient import TestClient
 from governance_api import app
+from config import CASA_API_KEY
 
 
-client = TestClient(app)
+class AuthenticatedTestClient(TestClient):
+    """Test client that automatically adds Bearer token to requests."""
+    
+    def request(self, *args, **kwargs):
+        if kwargs.get("headers") is None:
+            kwargs["headers"] = {}
+        kwargs["headers"]["Authorization"] = f"Bearer {CASA_API_KEY}"
+        return super().request(*args, **kwargs)
+
+
+client = AuthenticatedTestClient(app)
 
 
 # --------Health Check--------

@@ -1,8 +1,11 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field, field_validator
 import json
+import os
+from typing import Optional
 
-from config import ENVIRONMENT, LOG_LEVEL, POLICY_FILE, LEDGER_PATH
+from config import ENVIRONMENT, LOG_LEVEL, POLICY_FILE, LEDGER_PATH, CASA_API_KEY, CORS_ORIGINS
 
 from CASA.risk_engine import classify_risk
 from CASA.gate_engine import gate_decision
@@ -16,10 +19,42 @@ from CASA.telemetry.governance_dashboard import GovernanceDashboard
 from CASA.telemetry.boundary_stress_meter import BoundaryStressMeter
 
 
+# ------------------------------------------------
+# Security Configuration
+# ------------------------------------------------
+
+def verify_api_key(authorization: Optional[str] = Header(None)) -> str:
+    """Verify Bearer token in Authorization header."""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authorization header")
+    
+    parts = authorization.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Invalid authorization header format")
+    
+    token = parts[1]
+    if token != CASA_API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid API key")
+    
+    return token
+
+
 app = FastAPI(
     title="CASA Governance API",
     description="Deterministic Governance Control Plane for Agentic Systems",
     version="1.0"
+)
+
+# ------------------------------------------------
+# CORS Configuration
+# ------------------------------------------------
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -28,13 +63,28 @@ app = FastAPI(
 # ------------------------------------------------
 
 class GovernanceRequest(BaseModel):
-    agent: str
-    action: str
-    signals: dict
+    agent: str = Field(..., min_length=1, max_length=100)
+    action: str = Field(..., min_length=1, max_length=100)
+    signals: dict = Field(default_factory=dict)
+    
+    @field_validator("agent", "action")
+    @classmethod
+    def alphanumeric_underscore(cls, v):
+        if not all(c.isalnum() or c == "_" for c in v):
+            raise ValueError("Must contain only alphanumeric characters and underscores")
+        return v
 
 
 class PolicyDryRunRequest(BaseModel):
-    policy_candidate_path: str
+    policy_candidate_path: str = Field(..., min_length=1, max_length=500)
+    
+    @field_validator("policy_candidate_path")
+    @classmethod
+    def validate_path(cls, v):
+        # Prevent directory traversal attacks
+        if ".." in v or v.startswith("/"):
+            raise ValueError("Invalid policy path")
+        return v
 
 
 # ------------------------------------------------
@@ -42,7 +92,7 @@ class PolicyDryRunRequest(BaseModel):
 # ------------------------------------------------
 
 @app.post("/evaluate")
-def evaluate_governance(request: GovernanceRequest):
+def evaluate_governance(request: GovernanceRequest, token: str = Depends(verify_api_key)):
 
     # load current policy and evaluate request
     policy = load_policy()
@@ -77,7 +127,7 @@ def evaluate_governance(request: GovernanceRequest):
 # ------------------------------------------------
 
 @app.post("/policy/dryrun")
-def policy_dryrun(request: PolicyDryRunRequest):
+def policy_dryrun(request: PolicyDryRunRequest, token: str = Depends(verify_api_key)):
 
     try:
         with open(request.policy_candidate_path) as f:
@@ -118,7 +168,7 @@ def policy_dryrun(request: PolicyDryRunRequest):
 # ------------------------------------------------
 
 @app.get("/decision-replay/{decision_id}")
-def replay_single_decision(decision_id: str):
+def replay_single_decision(decision_id: str, token: str = Depends(verify_api_key)):
     """Replay a specific historical decision under current policy conditions.
     
     Enables regulatory audit trails: "how would this decision differ under current policy?"
@@ -132,13 +182,13 @@ def replay_single_decision(decision_id: str):
 
 
 class DecisionReplayBatchRequest(BaseModel):
-    agent_filter: str = None
-    action_filter: str = None
-    limit: int = 100
+    agent_filter: Optional[str] = None
+    action_filter: Optional[str] = None
+    limit: int = Field(default=100, ge=1, le=10000)
 
 
 @app.post("/decision-replay/batch")
-def replay_batch_decisions(request: DecisionReplayBatchRequest):
+def replay_batch_decisions(request: DecisionReplayBatchRequest, token: str = Depends(verify_api_key)):
     """Replay multiple historical decisions with optional filters.
     
     Enables policy impact analysis: what percentage of decisions would change?
@@ -156,7 +206,7 @@ def replay_batch_decisions(request: DecisionReplayBatchRequest):
 
 
 @app.get("/decision-replay/all")
-def replay_all_decisions():
+def replay_all_decisions(token: str = Depends(verify_api_key)):
     """Replay all historical decisions under current policy.
     
     Produces comprehensive governance audit showing total impact of policy evolution.
@@ -174,7 +224,7 @@ def replay_all_decisions():
 # ------------------------------------------------
 
 @app.get("/boundary-stress")
-def get_boundary_stress():
+def get_boundary_stress(token: str = Depends(verify_api_key)):
     """Get boundary stress metrics measuring system stress on policy limits.
     
     Returns stress score (0-1) and system state (STABLE/CAUTION/CRITICAL) indicating:
@@ -191,7 +241,7 @@ def get_boundary_stress():
 
 
 @app.get("/dashboard")
-def get_dashboard_json():
+def get_dashboard_json(token: str = Depends(verify_api_key)):
     """Get comprehensive governance dashboard in JSON format.
     
     Includes all observability panels:
@@ -209,7 +259,7 @@ def get_dashboard_json():
 
 
 @app.get("/dashboard/text")
-def get_dashboard_text():
+def get_dashboard_text(token: str = Depends(verify_api_key)):
     """Get governance dashboard as formatted ASCII text (for CLI/logs).
     
     Shows all monitoring panels in human-readable text format:

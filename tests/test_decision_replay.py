@@ -7,9 +7,11 @@ Verifies replay of historical decisions under new policy conditions.
 import pytest
 import json
 from pathlib import Path
+import uuid
 
 from CASA.decision_replay import DecisionReplayEngine
 from CASA.ledger import log_event
+from CASA.audit_ledger import read_ledger as read_audit_ledger
 
 
 @pytest.fixture(autouse=True)
@@ -26,12 +28,74 @@ def clean_ledger():
 @pytest.fixture
 def sample_ledger():
     """Create sample ledger entries for testing."""
-    # Log several decisions with signals
-    log_event("agent_1", "file_read", "LOW", "ALLOW")  # or 35?
-    log_event("agent_2", "database_write", "HIGH", "REVIEW")  # or 72?
-    log_event("agent_3", "api_call", "CRITICAL", "HALT")  # or 85?
-    log_event("agent_1", "config_change", "MEDIUM", "REVIEW")  # or 45?
-    log_event("agent_2", "file_read", "LOW", "ALLOW")  # or 25?
+    # Create entries with required fields for replay
+    entries = [
+        {
+            "decision_id": str(uuid.uuid4()),
+            "time": "2024-01-01T10:00:00",
+            "timestamp": "2024-01-01T10:00:00",
+            "agent": "agent_1",
+            "action": "file_read",
+            "risk": "LOW",
+            "decision": "ALLOW",
+            "policy_version": "v1.0",
+            "signals": {},
+            "route": "ALLOW"
+        },
+        {
+            "decision_id": str(uuid.uuid4()),
+            "time": "2024-01-01T10:00:01",
+            "timestamp": "2024-01-01T10:00:01",
+            "agent": "agent_2",
+            "action": "database_write",
+            "risk": "HIGH",
+            "decision": "REVIEW",
+            "policy_version": "v1.0",
+            "signals": {},
+            "route": "REVIEW"
+        },
+        {
+            "decision_id": str(uuid.uuid4()),
+            "time": "2024-01-01T10:00:02",
+            "timestamp": "2024-01-01T10:00:02",
+            "agent": "agent_3",
+            "action": "api_call",
+            "risk": "CRITICAL",
+            "decision": "HALT",
+            "policy_version": "v1.0",
+            "signals": {},
+            "route": "HALT"
+        },
+        {
+            "decision_id": str(uuid.uuid4()),
+            "time": "2024-01-01T10:00:03",
+            "timestamp": "2024-01-01T10:00:03",
+            "agent": "agent_1",
+            "action": "config_change",
+            "risk": "HIGH",
+            "decision": "REVIEW",
+            "policy_version": "v1.0",
+            "signals": {},
+            "route": "REVIEW"
+        },
+        {
+            "decision_id": str(uuid.uuid4()),
+            "time": "2024-01-01T10:00:04",
+            "timestamp": "2024-01-01T10:00:04",
+            "agent": "agent_2",
+            "action": "file_read",
+            "risk": "LOW",
+            "decision": "ALLOW",
+            "policy_version": "v1.0",
+            "signals": {},
+            "route": "ALLOW"
+        },
+    ]
+    
+    # Write entries to ledger
+    with open("ledger.log", "w") as f:
+        for entry in entries:
+            f.write(json.dumps(entry) + "\n")
 
 
 def test_replay_single_decision_not_found():
@@ -64,13 +128,13 @@ def test_replay_single_decision(sample_ledger):
     
     # Verify original data
     assert result["original"]["route"] == "ALLOW"
-    assert result["original"]["risk_score"] == 35
+    assert result["original"]["risk"] == "LOW"  # Changed from risk_score
     assert result["original"]["policy_version"] == "v1.0"
     
     # Verify replayed data
     assert "policy_version" in result["replayed"]
     assert "route" in result["replayed"]
-    assert "risk_score" in result["replayed"]
+    assert "risk" in result["replayed"]  # Changed from risk_score
     assert "confidence" in result["replayed"]
 
 
@@ -283,10 +347,10 @@ def test_replay_batch_decision_structure(sample_ledger):
         
         # Verify nested structure
         original = decision["original"]
-        assert all(k in original for k in ["policy_version", "route", "risk_score", "timestamp"])
+        assert all(k in original for k in ["policy_version", "route", "risk", "timestamp"])
         
         replayed = decision["replayed"]
-        assert all(k in replayed for k in ["policy_version", "route", "risk_score", "confidence", "timestamp"])
+        assert all(k in replayed for k in ["policy_version", "route", "risk", "confidence", "timestamp"])
 
 
 def test_replay_policy_version_tracking(sample_ledger):
