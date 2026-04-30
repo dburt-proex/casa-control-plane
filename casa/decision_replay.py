@@ -38,6 +38,13 @@ class DecisionReplayEngine:
     def __init__(self):
         """Initialize replay engine."""
         self.ledger = read_ledger()
+        # Build O(1) lookup index so replay_batch doesn't scan the entire
+        # ledger for every entry (avoids O(n²) behaviour in replay_batch).
+        self._ledger_index: dict = {
+            entry["decision_id"]: entry
+            for entry in self.ledger
+            if "decision_id" in entry
+        }
         self.current_policy = load_policy()
         self.current_policy_version = self.current_policy.get("version", "unknown")
     
@@ -69,12 +76,8 @@ class DecisionReplayEngine:
                 "reason": str,
             }
         """
-        # Find decision in ledger
-        decision_record = None
-        for entry in self.ledger:
-            if entry.get("decision_id") == decision_id:
-                decision_record = entry
-                break
+        # Find decision in ledger - O(1) using index
+        decision_record = self._ledger_index.get(decision_id)
         
         if not decision_record:
             raise ValueError(f"Decision {decision_id} not found in ledger")

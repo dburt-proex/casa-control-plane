@@ -8,4 +8,5 @@ build/
 .env
 .venv
 venv/
+CASA
 ledger.log
