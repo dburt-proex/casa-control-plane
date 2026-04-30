@@ -3,6 +3,8 @@ import json
 import hashlib
 from typing import List, Dict, Any
 
+from CASA import postgres_ledger
+
 
 LEDGER_FILE = "ledger.log"
 
@@ -52,7 +54,17 @@ def record_decision(agent: str, action: str, risk: str, decision: str) -> Dict[s
 
 
 def read_ledger() -> List[Dict[str, Any]]:
-    """Read and parse entire ledger file."""
+    """Read and parse entire ledger.
+
+    When DATABASE_URL is set, reads from Postgres and returns those entries.
+    Falls back to the flat ledger.log file when Postgres is unavailable.
+    """
+    if postgres_ledger.is_available():
+        entries = postgres_ledger.read_decisions()
+        if entries:
+            return entries
+
+    # File-backed fallback
     entries = []
     try:
         with open(LEDGER_FILE, "r") as f:

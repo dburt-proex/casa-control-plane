@@ -13,14 +13,25 @@
       "read_database",
       "write_database",
       "delete_database"
+    ],
+
+    "github_repo_operator": [
+      "inspect_repo",
+      "propose_file_change",
+      "create_branch",
+      "open_pull_request",
+      "apply_label",
+      "block_direct_merge"
     ]
   },
 
   "review": [
-    "write_database"
+    "write_database",
+    "open_pull_request"
   ],
 
   "forbidden": [
-    "delete_database"
+    "delete_database",
+    "block_direct_merge"
   ]
 }

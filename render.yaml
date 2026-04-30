@@ -8,6 +8,10 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
     healthCheckPath: /health
 
   # CASA Streamlit Dashboard

@@ -205,6 +205,87 @@ def review_decision(decision_id: str, request: ReviewDecisionRequest):
     }
 
 
+
+# ------------------------------------------------
+# Operator Chat Bridge
+# ------------------------------------------------
+
+_OPERATOR_COMMANDS = {
+    "dashboard",
+    "boundary_stress",
+    "decision_replay",
+    "list_flagged",
+    "evaluate",
+}
+
+
+class OperatorChatRequest(BaseModel):
+    """Structured operator chat / tool-bridge request."""
+    command: str
+    params: dict = {}
+
+
+@app.post("/operator/chat")
+def operator_chat(request: OperatorChatRequest):
+    """Operator chat/tool bridge.
+
+    Accepts a structured command and dispatches to the canonical governance
+    API surface.  Supported commands:
+
+    - ``dashboard``        — return live governance dashboard JSON
+    - ``boundary_stress``  — return boundary stress metrics
+    - ``decision_replay``  — replay a single decision (requires ``decision_id`` in params)
+    - ``list_flagged``     — list all pending REVIEW decisions
+    - ``evaluate``         — submit a governed evaluation (requires ``agent``, ``action``,
+                             and optionally ``signals`` in params)
+    """
+    cmd = request.command.lower().strip()
+
+    if cmd == "dashboard":
+        try:
+            dashboard = GovernanceDashboard()
+            return {"command": cmd, "result": dashboard.get_json_dashboard()}
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail="Ledger not found")
+
+    elif cmd == "boundary_stress":
+        try:
+            meter = BoundaryStressMeter()
+            return {"command": cmd, "result": meter.compute_stress()}
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail="Ledger not found")
+
+    elif cmd == "decision_replay":
+        decision_id = request.params.get("decision_id")
+        if not decision_id:
+            raise HTTPException(status_code=400, detail="decision_id required in params")
+        try:
+            engine = DecisionReplayEngine()
+            result = engine.replay_decision(decision_id)
+            return {"command": cmd, "result": result}
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
+    elif cmd == "list_flagged":
+        return {"command": cmd, "result": list_flagged_decisions()}
+
+    elif cmd == "evaluate":
+        agent = request.params.get("agent")
+        action = request.params.get("action")
+        if not agent or not action:
+            raise HTTPException(status_code=400, detail="agent and action required in params")
+        signals = request.params.get("signals", {})
+        gov_req = GovernanceRequest(agent=agent, action=action, signals=signals)
+        result = evaluate_governance(gov_req)
+        return {"command": cmd, "result": result}
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown command '{cmd}'. Supported: {sorted(_OPERATOR_COMMANDS)}"
+        )
+
+
 # ------------------------------------------------
 # Decision Replay Endpoints
 # ------------------------------------------------
