@@ -24,6 +24,7 @@ from CASA.middleware import casa_guard
 
 
 AGENT_ID = "github_repo_operator"
+GITHUB_REPO = os.getenv("GITHUB_REPO", "dburt-proex/casa-control-plane")
 
 
 # ---------------------------------------------------------------------------
@@ -32,7 +33,7 @@ AGENT_ID = "github_repo_operator"
 
 def inspect_repo():
     """Read repository metadata and recent commits."""
-    print("[github] Inspecting repository: dburt-proex/casa-control-plane")
+    print(f"[github] Inspecting repository: {GITHUB_REPO}")
     print("[github] Branch: master | Open PRs: 3 | Last commit: 2m ago")
 
 

@@ -9,7 +9,7 @@ system works without Postgres in development or on Render free tier.
 Schema (auto-created on first write):
 
     CREATE TABLE IF NOT EXISTS governance_decisions (
-        decision_id   UUID PRIMARY KEY,
+        decision_id   TEXT PRIMARY KEY,
         created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
         agent         TEXT NOT NULL,
         action        TEXT NOT NULL,
