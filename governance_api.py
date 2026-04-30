@@ -49,6 +49,12 @@ class PolicyDryRunRequest(BaseModel):
     policy_candidate_path: str
 
 
+class ReviewDecisionRequest(BaseModel):
+    action: str
+    reviewer: str = "operator"
+    notes: str = ""
+
+
 # ------------------------------------------------
 # Core Governance Evaluation Endpoint
 # ------------------------------------------------
@@ -56,19 +62,11 @@ class PolicyDryRunRequest(BaseModel):
 @app.post("/evaluate")
 def evaluate_governance(request: GovernanceRequest):
 
-    # load current policy and evaluate request
     policy = load_policy()
-
-    # classify risk based on action and signals
     risk = classify_risk(request.action, signals_context=request.signals)
-
-    # determine policy result for this agent/action
     policy_result = check_policy(request.agent, request.action, policy=policy)
-
-    # compute governance decision
     decision = gate_decision(policy_result, risk)
 
-    # log to ledger for audit/training - capture signals for replay
     log_event(
         request.agent,
         request.action,
@@ -104,7 +102,6 @@ def policy_dryrun(request: PolicyDryRunRequest):
     try:
         ledger_entries = read_ledger()
     except FileNotFoundError:
-        # No ledger yet, return empty results
         return {
             "decisions_analyzed": 0,
             "decisions_that_change": 0,
@@ -115,11 +112,97 @@ def policy_dryrun(request: PolicyDryRunRequest):
             "recommendation": "NO_DATA"
         }
 
-    # Use PolicySimulator to analyze impact of candidate policy
     simulator = PolicySimulator(candidate_policy, ledger_entries)
     results = simulator.simulate()
 
     return results
+
+
+# ------------------------------------------------
+# Review Gate Endpoints
+# ------------------------------------------------
+
+@app.get("/decisions/flagged")
+def list_flagged_decisions():
+    try:
+        ledger_entries = read_ledger()
+    except FileNotFoundError:
+        return []
+
+    reviewed_ids = {
+        entry.get("signals", {}).get("reviewed_decision_id")
+        for entry in ledger_entries
+        if entry.get("action") == "review_decision"
+    }
+
+    flagged = []
+    for entry in ledger_entries:
+        if entry.get("decision") == "REVIEW":
+            decision_id = entry.get("decision_id")
+            if decision_id and decision_id not in reviewed_ids:
+                flagged.append({
+                    "id": decision_id,
+                    "decision_id": decision_id,
+                    "timestamp": entry.get("time"),
+                    "agent": entry.get("agent"),
+                    "action": entry.get("action"),
+                    "status": "REVIEW",
+                    "risk": entry.get("risk"),
+                    "policy_version": entry.get("policy_version"),
+                    "signals": entry.get("signals", {}),
+                    "reason": "Decision requires human review"
+                })
+
+    return flagged
+
+
+@app.post("/decisions/{decision_id}/review")
+def review_decision(decision_id: str, request: ReviewDecisionRequest):
+    review_action = request.action.upper()
+    if review_action not in {"APPROVE", "HALT"}:
+        raise HTTPException(status_code=400, detail="Invalid action")
+
+    try:
+        ledger_entries = read_ledger()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Ledger not found")
+
+    original = next((e for e in ledger_entries if e.get("decision_id") == decision_id), None)
+    if not original:
+        raise HTTPException(status_code=404, detail="Decision not found")
+
+    if original.get("decision") != "REVIEW":
+        raise HTTPException(status_code=409, detail="Only REVIEW decisions can be reviewed")
+
+    already_reviewed = any(
+        e.get("action") == "review_decision" and
+        e.get("signals", {}).get("reviewed_decision_id") == decision_id
+        for e in ledger_entries
+    )
+    if already_reviewed:
+        raise HTTPException(status_code=409, detail="Already reviewed")
+
+    final_decision = "ALLOW" if review_action == "APPROVE" else "HALT"
+
+    policy = load_policy()
+    log_event(
+        request.reviewer,
+        "review_decision",
+        original.get("risk"),
+        final_decision,
+        signals={
+            "reviewed_decision_id": decision_id,
+            "review_action": review_action,
+            "review_notes": request.notes,
+        },
+        policy_version=policy.get("version", "unknown")
+    )
+
+    return {
+        "success": True,
+        "decision_id": decision_id,
+        "final_decision": final_decision
+    }
 
 
 # ------------------------------------------------
@@ -128,10 +211,6 @@ def policy_dryrun(request: PolicyDryRunRequest):
 
 @app.get("/decision-replay/{decision_id}")
 def replay_single_decision(decision_id: str):
-    """Replay a specific historical decision under current policy conditions.
-    
-    Enables regulatory audit trails: "how would this decision differ under current policy?"
-    """
     try:
         engine = DecisionReplayEngine()
         result = engine.replay_decision(decision_id)
@@ -148,10 +227,6 @@ class DecisionReplayBatchRequest(BaseModel):
 
 @app.post("/decision-replay/batch")
 def replay_batch_decisions(request: DecisionReplayBatchRequest):
-    """Replay multiple historical decisions with optional filters.
-    
-    Enables policy impact analysis: what percentage of decisions would change?
-    """
     try:
         engine = DecisionReplayEngine()
         results = engine.replay_batch(
@@ -166,10 +241,6 @@ def replay_batch_decisions(request: DecisionReplayBatchRequest):
 
 @app.get("/decision-replay/all")
 def replay_all_decisions():
-    """Replay all historical decisions under current policy.
-    
-    Produces comprehensive governance audit showing total impact of policy evolution.
-    """
     try:
         engine = DecisionReplayEngine()
         results = engine.replay_all_decisions()
@@ -184,14 +255,6 @@ def replay_all_decisions():
 
 @app.get("/boundary-stress")
 def get_boundary_stress():
-    """Get boundary stress metrics measuring system stress on policy limits.
-    
-    Returns stress score (0-1) and system state (STABLE/CAUTION/CRITICAL) indicating:
-    - Near-threshold decisions (decisions operating near review boundary)
-    - Tier2 boundary hits (escalations due to policy rules)
-    - Drift acceleration (sudden changes in behavior pattern)
-    - Confidence degradation (decisions below minimum confidence threshold)
-    """
     try:
         meter = BoundaryStressMeter()
         return meter.compute_stress()
@@ -201,15 +264,6 @@ def get_boundary_stress():
 
 @app.get("/dashboard")
 def get_dashboard_json():
-    """Get comprehensive governance dashboard in JSON format.
-    
-    Includes all observability panels:
-    - Governance Health (decision distribution, metrics)
-    - Boundary Stress (stress score, system state, warnings)
-    - Drift Monitoring (drift index, stability, anomalies)
-    - Risk Profile (risk classification distribution)
-    - System State (overall health, ledger integrity, policy version)
-    """
     try:
         dashboard = GovernanceDashboard()
         return dashboard.get_json_dashboard()
@@ -219,16 +273,6 @@ def get_dashboard_json():
 
 @app.get("/dashboard/text")
 def get_dashboard_text():
-    """Get governance dashboard as formatted ASCII text (for CLI/logs).
-    
-    Shows all monitoring panels in human-readable text format:
-    - Governance Health
-    - Boundary Stress
-    - Drift Monitoring
-    - Risk Classification
-    - System State
-    - Warnings & Alerts
-    """
     try:
         dashboard = GovernanceDashboard()
         return {
@@ -273,7 +317,4 @@ def serve_dashboard():
 
 @app.get("/health")
 def health_check():
-
-    return {
-        "status": "CASA Governance API running"
-    }
+    return {"status": "CASA Governance API running"}
