@@ -24,7 +24,6 @@ app = FastAPI(
     version="1.0"
 )
 
-# Allow cross-origin requests from the Streamlit dashboard and any deployed frontend
 _cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -34,10 +33,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# ------------------------------------------------
-# Request Models
-# ------------------------------------------------
 
 class GovernanceRequest(BaseModel):
     agent: str
@@ -55,13 +50,8 @@ class ReviewDecisionRequest(BaseModel):
     notes: str = ""
 
 
-# ------------------------------------------------
-# Core Governance Evaluation Endpoint
-# ------------------------------------------------
-
 @app.post("/evaluate")
 def evaluate_governance(request: GovernanceRequest):
-
     policy = load_policy()
     risk = classify_risk(request.action, signals_context=request.signals)
     policy_result = check_policy(request.agent, request.action, policy=policy)
@@ -84,13 +74,21 @@ def evaluate_governance(request: GovernanceRequest):
     }
 
 
-# ------------------------------------------------
-# Policy Dry-Run Simulation Endpoint
-# ------------------------------------------------
+@app.get("/ledger")
+def get_ledger():
+    try:
+        return read_ledger()
+    except FileNotFoundError:
+        return []
+
+
+@app.get("/policy")
+def get_policy():
+    return load_policy()
+
 
 @app.post("/policy/dryrun")
 def policy_dryrun(request: PolicyDryRunRequest):
-
     try:
         with open(request.policy_candidate_path) as f:
             candidate_policy = json.load(f)
@@ -113,14 +111,8 @@ def policy_dryrun(request: PolicyDryRunRequest):
         }
 
     simulator = PolicySimulator(candidate_policy, ledger_entries)
-    results = simulator.simulate()
+    return simulator.simulate()
 
-    return results
-
-
-# ------------------------------------------------
-# Review Gate Endpoints
-# ------------------------------------------------
 
 @app.get("/decisions/flagged")
 def list_flagged_decisions():
@@ -183,7 +175,6 @@ def review_decision(decision_id: str, request: ReviewDecisionRequest):
         raise HTTPException(status_code=409, detail="Already reviewed")
 
     final_decision = "ALLOW" if review_action == "APPROVE" else "HALT"
-
     policy = load_policy()
     log_event(
         request.reviewer,
@@ -205,16 +196,11 @@ def review_decision(decision_id: str, request: ReviewDecisionRequest):
     }
 
 
-# ------------------------------------------------
-# Decision Replay Endpoints
-# ------------------------------------------------
-
 @app.get("/decision-replay/{decision_id}")
 def replay_single_decision(decision_id: str):
     try:
         engine = DecisionReplayEngine()
-        result = engine.replay_decision(decision_id)
-        return result
+        return engine.replay_decision(decision_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -229,12 +215,11 @@ class DecisionReplayBatchRequest(BaseModel):
 def replay_batch_decisions(request: DecisionReplayBatchRequest):
     try:
         engine = DecisionReplayEngine()
-        results = engine.replay_batch(
+        return engine.replay_batch(
             agent_filter=request.agent_filter,
             action_filter=request.action_filter,
             limit=request.limit
         )
-        return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -243,15 +228,10 @@ def replay_batch_decisions(request: DecisionReplayBatchRequest):
 def replay_all_decisions():
     try:
         engine = DecisionReplayEngine()
-        results = engine.replay_all_decisions()
-        return results
+        return engine.replay_all_decisions()
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Ledger not found")
 
-
-# ------------------------------------------------
-# Boundary Stress & Dashboard Endpoints
-# ------------------------------------------------
 
 @app.get("/boundary-stress")
 def get_boundary_stress():
@@ -285,35 +265,25 @@ def get_dashboard_text():
         raise HTTPException(status_code=404, detail="Ledger not found")
 
 
-# ------------------------------------------------
-# HTML Dashboard
-# ------------------------------------------------
-
 @app.get("/")
 def serve_dashboard():
-    """Serve the HTML governance dashboard.
-    
-    Access at: http://localhost:5000/
-    """
     dashboard_path = os.path.join(os.path.dirname(__file__), "dashboard.html")
     if os.path.exists(dashboard_path):
         return FileResponse(dashboard_path, media_type="text/html")
-    else:
-        return {
-            "message": "CASA Governance API",
-            "endpoints": {
-                "api_docs": "/docs",
-                "dashboard": "/dashboard (JSON)",
-                "dashboard_text": "/dashboard/text",
-                "boundary_stress": "/boundary-stress",
-                "health": "/health"
-            }
+    return {
+        "message": "CASA Governance API",
+        "endpoints": {
+            "api_docs": "/docs",
+            "dashboard": "/dashboard (JSON)",
+            "dashboard_text": "/dashboard/text",
+            "boundary_stress": "/boundary-stress",
+            "ledger": "/ledger",
+            "policy": "/policy",
+            "flagged_decisions": "/decisions/flagged",
+            "health": "/health"
         }
+    }
 
-
-# ------------------------------------------------
-# Health Check Endpoint
-# ------------------------------------------------
 
 @app.get("/health")
 def health_check():
