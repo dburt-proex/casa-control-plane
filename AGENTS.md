@@ -1,6 +1,130 @@
 # AGENTS.md — Agent Registry and Governance Index
 
-This file is the canonical registry for all Copilot agent profiles and instruction sets in the CASA control plane repository.
+This file is the canonical registry for all Codex, Copilot, and supervised agent profiles and instruction sets in the CASA control plane repository.
+
+---
+
+## Codex Operating Contract
+
+### Project Context
+
+This repository is part of the CASA / PromptBP build system.
+
+CASA is a governed control-plane architecture for AI-assisted execution. The project prioritizes deterministic behavior, auditable decisions, bounded implementation, and demo-ready proof over speculative feature expansion.
+
+PromptBP is the instruction-control framework used to structure build prompts, reduce drift, and improve execution reliability.
+
+### Codex Authority
+
+Codex may:
+- Inspect repository structure.
+- Read relevant files.
+- Propose implementation plans.
+- Edit files only when explicitly scoped.
+- Run tests, linters, and build commands.
+- Create branches and pull request summaries.
+- Produce documentation for completed work.
+
+Codex may not:
+- Merge pull requests.
+- Deploy to production.
+- Delete files without explicit instruction.
+- Modify secrets, tokens, credentials, or environment variables.
+- Change production configuration unless explicitly scoped.
+- Remove routes, tests, or middleware without verifying dependencies.
+- Rewrite architecture without review.
+- Invent test results.
+- Claim success without validation evidence.
+
+### Required Workflow
+
+For every task:
+
+1. Restate the objective.
+2. Identify the scoped files or directories.
+3. Inspect before editing.
+4. Make the smallest viable change.
+5. Run relevant validation.
+6. Report changed files.
+7. Report tests and results.
+8. Identify risks.
+9. Provide rollback instructions.
+10. Recommend the next bounded block.
+
+### Gate Policy
+
+Use CASA-style gate classification for all work.
+
+ALLOW:
+- Documentation updates.
+- Read-only audits.
+- Small low-risk fixes.
+- Formatting changes.
+- Non-functional cleanup.
+
+REVIEW:
+- API route changes.
+- Database or persistence changes.
+- Auth, permissions, or session logic.
+- Frontend/backend contract changes.
+- Test rewrites.
+- Dependency changes.
+- Deployment config changes.
+
+HALT:
+- Secrets or credentials.
+- Production deploys.
+- Destructive file deletion.
+- Irreversible migrations.
+- Security-sensitive changes without explicit authorization.
+- Any change Codex cannot validate.
+
+### Block-Boundary Execution
+
+Never perform broad “fix everything” work.
+
+Every implementation must define:
+
+- Block name
+- Scope
+- Included files
+- Excluded files
+- Acceptance criteria
+- Tests to run
+- Rollback path
+- Gate classification
+
+### PR Output Standard
+
+Every PR or proposed change must include:
+
+- Summary
+- Scope
+- Explicit non-scope
+- Files changed
+- Tests run
+- Test results
+- CASA gate classification
+- Risk notes
+- Rollback plan
+- Recommended next block
+
+### Repository Priorities
+
+Prioritize in this order:
+
+1. Stable demo path.
+2. Backend/frontend contract alignment.
+3. Ledger and audit reliability.
+4. Test coverage.
+5. Clear documentation.
+6. Monetizable proof artifact.
+
+Avoid adding infrastructure before validating demo usefulness, buyer clarity, or revenue path.
+
+### Default Constraint
+
+When uncertain, stop and classify the issue as REVIEW instead of guessing.
 
 ---
 
@@ -72,8 +196,8 @@ Pause and emit a REVIEW PACK before executing when work touches:
 All agents operating in this repository must observe:
 
 1. All execution paths affecting policy, gating, risk scoring, or audit records route through `casa.evaluate()`
-2. Gate state set is closed: `AUTO`, `REVIEW`, `HALT` only
-3. Tier 3 actions always produce `HALT`
+2. Gate state set is closed: `ALLOW`, `REVIEW`, `HALT` only
+3. High-risk actions always produce `HALT`
 4. Policy changes must increment `policy_version`
 5. Invariant drift is a critical failure — never suppress drift signals
 6. Ledger entries are append-only and must not be modified or deleted
