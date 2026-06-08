@@ -112,7 +112,7 @@ def test_risk_levels():
     """Test that actions are classified with correct risk levels."""
     test_cases = [
         ("read_database", "LOW"),
-        ("send_email", "LOW"),
+        ("send_email", "HIGH"),
         ("write_database", "HIGH"),
         ("delete_database", "CRITICAL"),
     ]

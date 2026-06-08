@@ -1,4 +1,3 @@
-
 POLICY_FILE = "policy.json"
 
 RISK_MATRIX = {
@@ -14,4 +13,8 @@ RISK_MATRIX = {
     "open_pull_request": "HIGH",
     "apply_label": "LOW",
     "block_direct_merge": "CRITICAL",
+    # Demo agent actions
+    "summarize public support ticket": "LOW",
+    "send customer-facing email": "HIGH",
+    "delete customer records": "CRITICAL"
 }

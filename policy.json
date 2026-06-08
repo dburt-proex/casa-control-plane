@@ -4,17 +4,14 @@
       "read_database",
       "write_database"
     ],
-
     "analytics_agent": [
       "read_database"
     ],
-
     "admin_agent": [
       "read_database",
       "write_database",
       "delete_database"
     ],
-
     "github_repo_operator": [
       "inspect_repo",
       "propose_file_change",
@@ -22,16 +19,21 @@
       "open_pull_request",
       "apply_label",
       "block_direct_merge"
+    ],
+    "demo-agent": [
+      "summarize public support ticket",
+      "send customer-facing email",
+      "delete customer records"
     ]
   },
-
   "review": [
     "write_database",
-    "open_pull_request"
+    "open_pull_request",
+    "send customer-facing email"
   ],
-
   "forbidden": [
     "delete_database",
-    "block_direct_merge"
+    "block_direct_merge",
+    "delete customer records"
   ]
 }
