@@ -1,0 +1,15 @@
+name: Frozen Ecosystem Guard
+on:
+  pull_request:
+  push:
+    branches: [master]
+permissions:
+  contents: read
+jobs:
+  frozen:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "HALT: dburt-proex/backend-c.c.p. is LEGACY and superseded by dburt-proex/casa."
+          echo "Route new execution-governance work to the canonical CASA repository."
+          exit 1
