@@ -1,0 +1,10 @@
+{
+  "registry": "dburt-proex/operator-intelligence:ecosystem/registry.json",
+  "registry_version": "1.0.0",
+  "repository": "dburt-proex/backend-c.c.p.",
+  "classification": "LEGACY",
+  "status": "FROZEN",
+  "authority_for": [],
+  "may_define_new_primitives": false,
+  "superseded_by": "dburt-proex/casa"
+}
